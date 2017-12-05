@@ -19,6 +19,7 @@ import org.osmdroid.samplefragments.cache.SampleJumboCache;
 import org.osmdroid.samplefragments.cache.SampleSqliteOnly;
 import org.osmdroid.samplefragments.animations.AnimatedMarkerTimer;
 import org.osmdroid.samplefragments.data.AsyncTaskDemoFragment;
+import org.osmdroid.samplefragments.data.SampleUSNGGridlines;
 import org.osmdroid.samplefragments.drawing.DrawPolygonHoles;
 import org.osmdroid.samplefragments.drawing.DrawPolygonWithoutWrapping;
 import org.osmdroid.samplefragments.drawing.PressToPlot;
@@ -230,6 +231,7 @@ public final class SampleFactory implements ISampleFactory {
         mSamples.add(SampleAssetsOnlyWithoutWrapping.class);
         mSamples.add(SampleDrawPolylineWithoutWrapping.class);
         mSamples.add(DrawPolygonWithoutWrapping.class);
+        mSamples.add(SampleUSNGGridlines.class);
 
         //mSamples.add(NasaWms111Source.class);
         //mSamples.add(NasaWms130Source.class);
