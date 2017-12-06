@@ -94,7 +94,7 @@ public class USNGGrids {
 
         double ne_utm_e = (Math.floor((Double)utmcoords.get(0)/this.interval+1)*this.interval)+this.interval;
         double ne_utm_n = (Math.floor((Double)utmcoords.get(1)/this.interval+1)*this.interval)+this.interval;
-        GeoPoint geocoords = new GeoPoint(0.0,0.0);
+        GeoPoint geocoords;
         ArrayList<Double> northings = new ArrayList<>();   // used to calculate 100K label positions
         ArrayList<Double> eastings = new ArrayList<>();    // used to calculate 100K label positions
 
@@ -114,10 +114,11 @@ public class USNGGrids {
         }
 
         // for 1,000-meter grid and finer, don't want to label zone lines
-        if (this.interval > 1000) { northings.set(0, this.sLat); }
+        if (this.interval > 1000) { northings.add(0, this.sLat); }
         k = 1;
         // for each e-w line that covers the cell, with overedge
         for (i=sw_utm_n, j=0; i<ne_utm_n; i+=this.interval,j++) {
+            geocoords = new GeoPoint(0.0,0.0);
             ArrayList<GeoPoint> temp = new ArrayList<>();   // holds extended lines
             ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();  // holds lines clipped to GZD bounds
 
@@ -133,16 +134,15 @@ public class USNGGrids {
                 temp.add(n, new GeoPoint(geocoords.getLatitude(),geocoords.getLongitude()));
             }
 
-            // clipping routine...clip e-w grid lines to GZD boundary
+            /* clipping routine...clip e-w grid lines to GZD boundary
             //    case of final point in the array is not covered
             for (p=0; p<temp.size(); p++) {
                 if (this.clipToGZD(temp,p)) {
                     gr100kCoord.add(temp.get(p));
                 }
             }
-            Polyline newLine = new Polyline();
-            newLine.setPoints(gr100kCoord);
-            this.gridlines.add(newLine);  // array of e-w grid line segments
+            */
+            this.gridlines.add(USNGUtil.createPolyline(temp));  // array of e-w grid line segments
         }
 
         northings.add(k++, this.nLat);
@@ -154,6 +154,7 @@ public class USNGGrids {
 
         // for each n-s line that covers the cell, with overedge
         for (i=sw_utm_e; i<ne_utm_e; i+=this.interval,j++) {
+            geocoords = new GeoPoint(0.0,0.0);
             ArrayList<GeoPoint> temp = new ArrayList<>();   // holds extended lines
             ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();  // holds lines clipped to GZD bounds
 
@@ -170,18 +171,17 @@ public class USNGGrids {
                 temp.set(n, new GeoPoint(geocoords.getLatitude(), geocoords.getLongitude()));
             }
 
-            // clipping routine...clip n-s grid lines to GZD boundary
+            /* clipping routine...clip n-s grid lines to GZD boundary
             for (p=0; p<temp.size()-1; p++) {
                 if (this.clipToGZD(temp,p)) {
                     gr100kCoord.add(temp.get(p));
                 }
             }
+            */
 
-            Polyline newLine = new Polyline();
-            newLine.setPoints(gr100kCoord);
-            this.gridlines.add(newLine);  // array of n-s grid line segments
+            this.gridlines.add(USNGUtil.createPolyline(temp));  // array of n-s grid line segments
         }
-        eastings.set(k, eLng_temp); //this.elng  // east boundary of viewport
+        eastings.add(k, eLng_temp); //this.elng  // east boundary of viewport
 
 ////???? not sure if needed???
 //    if (viewport.idl_model != 0) {

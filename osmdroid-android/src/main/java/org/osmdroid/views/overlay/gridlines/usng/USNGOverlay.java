@@ -1,6 +1,7 @@
 package org.osmdroid.views.overlay.gridlines.usng;
 
 import android.content.Context;
+import android.util.Log;
 
 import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
@@ -16,6 +17,7 @@ import java.util.List;
  */
 
 public class USNGOverlay {
+    private static final String LOG_TAG = USNGOverlay.class.getSimpleName();
 
 
     public static FolderOverlay getUSNGGrid (Context mContext, MapView mapView) {
@@ -71,7 +73,7 @@ public class USNGOverlay {
             try {
                  grid100k = USNGGrids.grid100k(viewPort, zoomLevel);
             } catch (Exception e) {
-
+                Log.e(LOG_TAG,"display 100k grid",e);
             }
             for (Polyline p : grid100k) {
                 unsgGridLines.add(p);
