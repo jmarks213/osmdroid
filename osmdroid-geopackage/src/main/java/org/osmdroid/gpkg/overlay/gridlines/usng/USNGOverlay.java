@@ -1,4 +1,4 @@
-package org.osmdroid.views.overlay.gridlines.usng;
+package org.osmdroid.gpkg.overlay.gridlines.usng;
 
 import android.content.Context;
 import android.util.Log;
@@ -75,8 +75,10 @@ public class USNGOverlay {
             } catch (Exception e) {
                 Log.e(LOG_TAG,"display 100k grid",e);
             }
-            for (Polyline p : grid100k) {
-                unsgGridLines.add(p);
+            if (grid100k != null) {
+                for (Polyline p : grid100k) {
+                    unsgGridLines.add(p);
+                }
             }
             /*
             if (zoom > 6 ) {    // display 100K labels

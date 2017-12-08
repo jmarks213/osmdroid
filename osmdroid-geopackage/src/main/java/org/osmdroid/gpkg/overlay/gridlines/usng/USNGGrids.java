@@ -1,10 +1,8 @@
-package org.osmdroid.views.overlay.gridlines.usng;
-
-import android.graphics.Point;
+package org.osmdroid.gpkg.overlay.gridlines.usng;
 
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.util.PointL;
 import org.osmdroid.views.overlay.Polyline;
-import org.osmdroid.views.util.Mercator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +34,13 @@ public class USNGGrids {
 
         this.interval = interval;
 
-        Point nw = Mercator.projectGeoPoint(nLat, wLng, zoomLevel, null);
-        Point se = Mercator.projectGeoPoint(sLat, eLng, zoomLevel, null);
 
-        Mercator.projectPoint(nw.x, nw.y, zoomLevel);
+        PointL nw = projection.toProjectedPixels(nLat, wLng, null);
+        PointL se = projection.toProjectedPixels(sLat, eLng, null);
+        //Point nw = Mercator.projectGeoPoint(nLat, wLng, zoomLevel, null);
+        //Point se = Mercator.projectGeoPoint(sLat, eLng, zoomLevel, null);
+
+        //Mercator.projectPoint(nw.x, nw.y, zoomLevel);
 
         p_sLat = se.y;
         p_wLng = nw.x;
@@ -59,6 +60,10 @@ public class USNGGrids {
         polylines = zoneLines.getPolylines();
 
         List<USNGGeoRectangle> geoRectangles = viewPort.getGeoRectangles();
+
+        if (geoRectangles.isEmpty()) {
+            return null;
+        }
 
         // for each geographic rectangle in this viewport, generate and store 100K gridlines
         for (int i=0 ; i < geoRectangles.size() ; i++) {
@@ -134,6 +139,7 @@ public class USNGGrids {
                 temp.add(n, new GeoPoint(geocoords.getLatitude(),geocoords.getLongitude()));
             }
 
+
             /* clipping routine...clip e-w grid lines to GZD boundary
             //    case of final point in the array is not covered
             for (p=0; p<temp.size(); p++) {
@@ -142,6 +148,20 @@ public class USNGGrids {
                 }
             }
             */
+            /***************************** For debugging
+            ArrayList<PointL> pProjected = new ArrayList<>(temp.size());
+            pProjected.clear();
+            for (final GeoPoint geoPoint : temp) {
+                Point mercator = USNGUtil.EPSG4326_TO_EPSG900913(geoPoint);
+                pProjected.add(projection.toMercatorPixels(
+                        mercator.x, mercator.y, null));
+            }
+            ArrayList<Point> pixelsPoints = new ArrayList<>(temp.size());
+            for (PointL pointL : pProjected) {
+                pixelsPoints.add(projection.toPixelsFromProjected(pointL, null));
+            }
+             **/
+
             this.gridlines.add(USNGUtil.createPolyline(temp));  // array of e-w grid line segments
         }
 

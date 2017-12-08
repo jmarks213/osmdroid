@@ -1,12 +1,17 @@
-package org.osmdroid.views.overlay.gridlines.usng;
+package org.osmdroid.gpkg.overlay.gridlines.usng;
 
 import android.graphics.Color;
+import android.graphics.Point;
 
+import org.osgeo.proj4j.proj.Projection;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import mil.nga.geopackage.projection.ProjectionConstants;
+import mil.nga.geopackage.projection.ProjectionTransform;
 
 /**
  * Created by Jason on 11/13/2017.
@@ -313,6 +318,35 @@ public class USNGUtil {
         polyline.setColor(Color.BLACK);
         polyline.setPoints(geoPoints);
         return polyline;
+    }
+
+    /**
+     * From EPSG 900913/3857
+     */
+    public static void toEPSG4326fromEPSG3857 () {
+        mil.nga.geopackage.projection.Projection projection = new mil.nga.geopackage.projection.Projection();
+        ProjectionTransform toWgs84 = projection
+                .getTransformation(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+        mil.nga.geopackage.projection.Projection wgs84 = toWgs84.getToProjection();
+        fromWgs84 = wgs84.getTransformation(projection);
+    }
+
+    /**
+     * From EPSG 4326
+     */
+    public static void toEPSG3857fromEPSG4326 () {
+
+    }
+
+
+    public static Point EPSG4326_TO_EPSG900913 (GeoPoint geoPoint) {
+        double lon = geoPoint.getLongitude();
+        double lat = geoPoint.getLatitude();
+        double x = lon * 20037508.34 / 180;
+        double y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+        y = y * 20037508.34 / 180;
+
+        return new Point((int)x, (int)y);
     }
 
     /***************** convert latitude, longitude to UTM  *******************

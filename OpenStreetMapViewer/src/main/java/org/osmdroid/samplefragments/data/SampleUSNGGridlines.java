@@ -1,15 +1,12 @@
 package org.osmdroid.samplefragments.data;
 
-import android.graphics.Color;
-
 import org.osmdroid.events.MapListener;
 import org.osmdroid.events.ScrollEvent;
 import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.samplefragments.BaseSampleFragment;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.FolderOverlay;
-import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay;
-import org.osmdroid.views.overlay.gridlines.usng.USNGOverlay;
+import org.osmdroid.gpkg.overlay.gridlines.usng.USNGOverlay;
 
 /**
  * An example on how to use the lat/lon gridline overlay.

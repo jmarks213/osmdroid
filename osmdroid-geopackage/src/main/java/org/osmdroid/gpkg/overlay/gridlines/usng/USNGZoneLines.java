@@ -1,4 +1,4 @@
-package org.osmdroid.views.overlay.gridlines.usng;
+package org.osmdroid.gpkg.overlay.gridlines.usng;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Polyline;
