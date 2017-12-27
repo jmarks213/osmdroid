@@ -1,5 +1,7 @@
 package org.osmdroid.gpkg.overlay.gridlines.usng;
 
+import org.osgeo.proj4j.CRSFactory;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.util.PointL;
 import org.osmdroid.views.overlay.Polyline;
@@ -34,9 +36,8 @@ public class USNGGrids {
 
         this.interval = interval;
 
-
-        PointL nw = projection.toProjectedPixels(nLat, wLng, null);
-        PointL se = projection.toProjectedPixels(sLat, eLng, null);
+        PointL nw = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(nLat, wLng));
+        PointL se = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(sLat, eLng));
         //Point nw = Mercator.projectGeoPoint(nLat, wLng, zoomLevel, null);
         //Point se = Mercator.projectGeoPoint(sLat, eLng, zoomLevel, null);
 
@@ -136,7 +137,7 @@ public class USNGGrids {
             // calculate  line segments of one e-w line
             for (m=sw_utm_e,n=0; m<=ne_utm_e; m+=precision,n++) {
                 USNGUtil.UTMtoLL(i,m,zone,geocoords);
-                temp.add(n, new GeoPoint(geocoords.getLatitude(),geocoords.getLongitude()));
+                temp.add(n, USNGUtil.toEPSG4326fromEPSG3857GeoPoint(geocoords));
             }
 
 
@@ -188,7 +189,7 @@ public class USNGGrids {
 
             for (m=sw_utm_n,n=0; m<=ne_utm_n; m+=precision,n++) {
                 USNGUtil.UTMtoLL(m,i,zone,geocoords);
-                temp.set(n, new GeoPoint(geocoords.getLatitude(), geocoords.getLongitude()));
+                temp.set(n, USNGUtil.toEPSG4326fromEPSG3857GeoPoint(geocoords));
             }
 
             /* clipping routine...clip n-s grid lines to GZD boundary

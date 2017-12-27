@@ -3,14 +3,23 @@ package org.osmdroid.gpkg.overlay.gridlines.usng;
 import android.graphics.Color;
 import android.graphics.Point;
 
+import org.osgeo.proj4j.CRSFactory;
+import org.osgeo.proj4j.CoordinateReferenceSystem;
+import org.osgeo.proj4j.CoordinateTransform;
+import org.osgeo.proj4j.CoordinateTransformFactory;
+import org.osgeo.proj4j.ProjCoordinate;
+import org.osgeo.proj4j.datum.Datum;
 import org.osgeo.proj4j.proj.Projection;
+import org.osgeo.proj4j.util.ProjectionUtil;
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.util.PointL;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import mil.nga.geopackage.projection.ProjectionConstants;
+import mil.nga.geopackage.projection.ProjectionFactory;
 import mil.nga.geopackage.projection.ProjectionTransform;
 
 /**
@@ -323,19 +332,52 @@ public class USNGUtil {
     /**
      * From EPSG 900913/3857
      */
-    public static void toEPSG4326fromEPSG3857 () {
-        mil.nga.geopackage.projection.Projection projection = new mil.nga.geopackage.projection.Projection();
-        ProjectionTransform toWgs84 = projection
-                .getTransformation(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
-        mil.nga.geopackage.projection.Projection wgs84 = toWgs84.getToProjection();
-        fromWgs84 = wgs84.getTransformation(projection);
+    public static PointL toEPSG4326fromEPSG3857PointL (GeoPoint geoPoint) {
+        mil.nga.geopackage.projection.Projection projection = ProjectionFactory.getProjection(3857);
+
+        ProjectionTransform toWgs84 = projection.getTransformation(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+
+        ProjCoordinate projCoordinate = new ProjCoordinate(geoPoint.getLatitude(), geoPoint.getLongitude());
+
+        projCoordinate = toWgs84.transform(projCoordinate);
+
+        return new PointL((long)projCoordinate.x, (long)projCoordinate.y);
+    }
+
+    /**
+     * From EPSG 900913/3857
+     */
+    public static GeoPoint toEPSG4326fromEPSG3857GeoPoint (GeoPoint geoPoint) {
+        mil.nga.geopackage.projection.Projection projection = ProjectionFactory.getProjection(3857);
+
+        ProjectionTransform toWgs84 = projection.getTransformation(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+
+        ProjCoordinate projCoordinate = new ProjCoordinate(geoPoint.getLatitude(), geoPoint.getLongitude());
+
+        projCoordinate = toWgs84.transform(projCoordinate);
+
+        return new GeoPoint((long)projCoordinate.x, (long)projCoordinate.y);
     }
 
     /**
      * From EPSG 4326
      */
-    public static void toEPSG3857fromEPSG4326 () {
+    public static PointL toEPSG3857fromEPSG4326 (GeoPoint geoPoint) {
+        CRSFactory crsFactory = new CRSFactory();
 
+        CoordinateReferenceSystem crs1 = crsFactory.createFromName("EPSG:4326");
+        CoordinateReferenceSystem crs2 = crsFactory.createFromName("EPSG:3857");
+
+        CoordinateTransformFactory f = new CoordinateTransformFactory();
+        CoordinateTransform transform = f.createTransform(crs1, crs2);
+        Datum d = Datum.WGS84;
+        d.transformFromGeocentricToWgs84();
+
+        ProjCoordinate source = new ProjCoordinate(geoPoint.getLongitude(), geoPoint.getLatitude());
+        ProjCoordinate dest = new ProjCoordinate();
+        transform.transform(source, dest);
+
+        return new PointL((long)dest.x, (long)dest.y);
     }
 
 
