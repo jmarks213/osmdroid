@@ -8,6 +8,7 @@ import org.osgeo.proj4j.CoordinateReferenceSystem;
 import org.osgeo.proj4j.CoordinateTransform;
 import org.osgeo.proj4j.CoordinateTransformFactory;
 import org.osgeo.proj4j.ProjCoordinate;
+import org.osgeo.proj4j.Registry;
 import org.osgeo.proj4j.datum.Datum;
 import org.osgeo.proj4j.proj.Projection;
 import org.osgeo.proj4j.util.ProjectionUtil;
@@ -18,6 +19,7 @@ import org.osmdroid.views.overlay.Polyline;
 import java.util.ArrayList;
 import java.util.List;
 
+import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
 import mil.nga.geopackage.projection.ProjectionConstants;
 import mil.nga.geopackage.projection.ProjectionFactory;
 import mil.nga.geopackage.projection.ProjectionTransform;
@@ -27,6 +29,38 @@ import mil.nga.geopackage.projection.ProjectionTransform;
  */
 
 public class USNGUtil {
+
+    /**
+     * EPSG:4326 parameters
+     *
+     * +proj=longlat
+     * +datum=WGS84
+     * +no_defs
+     */
+    private static final String[] EPSG_4326_PARAMETERS = {"+proj=longlat","+datum=WGS84","+no_defs"};
+
+    /**
+     * EPSG:3857 parameters
+     *
+     * +proj=merc
+     * +a=6378137
+     * +b=6378137
+     * +lat_ts=0.0
+     * +lon_0=0.0
+     * +x_0=0.0
+     * +y_0=0
+     * +k=1.0
+     * +units=m
+     * +nadgrids=@null
+     * +wktext
+     * +no_defs
+     */
+    private static final String[] EPSG_3857_PARAMETERS = {"+proj=merc","+a=6378137","+b=6378137",
+            "+lat_ts=0.0","+lon_0=0.0","+x_0=0.0","+y_0=0","+k=1.0","+units=m","+nadgrids=@null",
+            "+wktext","+no_defs"};
+
+    private static CoordinateReferenceSystem EPSG_4326_COORD_REF;
+    private static CoordinateReferenceSystem EPSG_3857_COORD_REF;
 
     /**
      * Constants
@@ -331,7 +365,7 @@ public class USNGUtil {
 
     /**
      * From EPSG 900913/3857
-     */
+
     public static PointL toEPSG4326fromEPSG3857PointL (GeoPoint geoPoint) {
         mil.nga.geopackage.projection.Projection projection = ProjectionFactory.getProjection(3857);
 
@@ -343,41 +377,69 @@ public class USNGUtil {
 
         return new PointL((long)projCoordinate.x, (long)projCoordinate.y);
     }
+     */
 
     /**
      * From EPSG 900913/3857
      */
-    public static GeoPoint toEPSG4326fromEPSG3857GeoPoint (GeoPoint geoPoint) {
-        mil.nga.geopackage.projection.Projection projection = ProjectionFactory.getProjection(3857);
+    public static GeoPoint toEPSG4326fromEPSG3857GeoPoint (GeoPoint coord) {
+        if (EPSG_3857_COORD_REF == null || EPSG_4326_COORD_REF == null) {
+            CRSFactory crsFactory = new CRSFactory();
+            if (EPSG_4326_COORD_REF == null) {
+                EPSG_4326_COORD_REF = crsFactory.createFromName("EPSG:4326");
+            }
+            if (EPSG_3857_COORD_REF == null) {
+                EPSG_3857_COORD_REF = crsFactory.createFromName("EPSG:3857");
+            }
+        }
 
-        ProjectionTransform toWgs84 = projection.getTransformation(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+        CoordinateTransformFactory f = new CoordinateTransformFactory();
+        CoordinateTransform t = f.createTransform(
+                EPSG_4326_COORD_REF,
+                EPSG_3857_COORD_REF);
 
-        ProjCoordinate projCoordinate = new ProjCoordinate(geoPoint.getLatitude(), geoPoint.getLongitude());
+        /*
+        CoordinateTransform t = f.createTransform(
+                crsFactory.createFromName("EPSG:4326"),
+                crsFactory.createFromName("EPSG:3857"));
+                */
 
-        projCoordinate = toWgs84.transform(projCoordinate);
+        ProjCoordinate dest = new ProjCoordinate();
+        t.transform(new ProjCoordinate(coord.getLongitude(), coord.getLatitude()), dest);
 
-        return new GeoPoint((long)projCoordinate.x, (long)projCoordinate.y);
+        return new GeoPoint(dest.y, dest.x);
     }
 
     /**
      * From EPSG 4326
      */
-    public static PointL toEPSG3857fromEPSG4326 (GeoPoint geoPoint) {
-        CRSFactory crsFactory = new CRSFactory();
-
-        CoordinateReferenceSystem crs1 = crsFactory.createFromName("EPSG:4326");
-        CoordinateReferenceSystem crs2 = crsFactory.createFromName("EPSG:3857");
+    public static ProjCoordinate toEPSG3857fromEPSG4326 (GeoPoint geoPoint) {
+        if (EPSG_3857_COORD_REF == null || EPSG_4326_COORD_REF == null) {
+            CRSFactory crsFactory = new CRSFactory();
+            if (EPSG_4326_COORD_REF == null) {
+                EPSG_4326_COORD_REF = crsFactory.createFromName("EPSG:4326");
+            }
+            if (EPSG_3857_COORD_REF == null) {
+                EPSG_3857_COORD_REF = crsFactory.createFromName("EPSG:3857");
+            }
+        }
 
         CoordinateTransformFactory f = new CoordinateTransformFactory();
-        CoordinateTransform transform = f.createTransform(crs1, crs2);
-        Datum d = Datum.WGS84;
-        d.transformFromGeocentricToWgs84();
+        CoordinateTransform t = f.createTransform(
+                EPSG_4326_COORD_REF,
+                EPSG_3857_COORD_REF);
 
-        ProjCoordinate source = new ProjCoordinate(geoPoint.getLongitude(), geoPoint.getLatitude());
+        /*
+        CoordinateTransform t = f.createTransform(
+                crsFactory.createFromName("EPSG:4326"),
+                crsFactory.createFromName("EPSG:3857"));
+                */
+
+        ProjCoordinate source = new ProjCoordinate(geoPoint.getLongitude(), geoPoint.getLatitude(), 0);
         ProjCoordinate dest = new ProjCoordinate();
-        transform.transform(source, dest);
+        t.transform(source, dest);
 
-        return new PointL((long)dest.x, (long)dest.y);
+        return new ProjCoordinate((long)dest.x, (long)dest.y);
     }
 
 

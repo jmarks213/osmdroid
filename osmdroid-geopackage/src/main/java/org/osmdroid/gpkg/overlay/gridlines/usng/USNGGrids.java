@@ -2,6 +2,7 @@ package org.osmdroid.gpkg.overlay.gridlines.usng;
 
 import org.osgeo.proj4j.CRSFactory;
 import org.osgeo.proj4j.CoordinateReferenceSystem;
+import org.osgeo.proj4j.ProjCoordinate;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.util.PointL;
 import org.osmdroid.views.overlay.Polyline;
@@ -36,8 +37,10 @@ public class USNGGrids {
 
         this.interval = interval;
 
-        PointL nw = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(nLat, wLng));
-        PointL se = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(sLat, eLng));
+        ProjCoordinate nw = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(nLat, wLng));
+        ProjCoordinate se = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(sLat, eLng));
+        //PointL nw = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(nLat, wLng));
+        //PointL se = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(sLat, eLng));
         //Point nw = Mercator.projectGeoPoint(nLat, wLng, zoomLevel, null);
         //Point se = Mercator.projectGeoPoint(sLat, eLng, zoomLevel, null);
 
