@@ -132,7 +132,7 @@ public class USNGUtil {
             return null;
         }
 
-        int lonTemp = (int)((lon + 180) - ((lon + 180) / 360) * 360 - 180);
+        int lonTemp = (int)((lon + 180) - (int)((lon + 180) / 360) * 360 - 180);
         int zoneNumber = (int)((lonTemp + 180) / 6) + 1;
 
         // Handle special case of west coast of Norway
@@ -371,8 +371,8 @@ public class USNGUtil {
 
         CoordinateTransformFactory f = new CoordinateTransformFactory();
         CoordinateTransform t = f.createTransform(
-                EPSG_4326_COORD_REF,
-                EPSG_3857_COORD_REF);
+                EPSG_3857_COORD_REF,
+                EPSG_4326_COORD_REF);
 
         ProjCoordinate dest = new ProjCoordinate();
         t.transform(new ProjCoordinate(coord.getLongitude(), coord.getLatitude()), dest);
@@ -383,7 +383,7 @@ public class USNGUtil {
     /**
      * From EPSG:4326 To EPSG:900913/3857
      */
-    public static ProjCoordinate toEPSG3857fromEPSG4326 (GeoPoint geoPoint) {
+    public static ProjCoordinate toEPSG3857fromEPSG4326 (ProjCoordinate source) {
         setupCoordRefs();
 
         CoordinateTransformFactory f = new CoordinateTransformFactory();
@@ -391,7 +391,6 @@ public class USNGUtil {
                 EPSG_4326_COORD_REF,
                 EPSG_3857_COORD_REF);
 
-        ProjCoordinate source = new ProjCoordinate(geoPoint.getLongitude(), geoPoint.getLatitude(), 0);
         ProjCoordinate dest = new ProjCoordinate();
         t.transform(source, dest);
 
@@ -466,14 +465,14 @@ public class USNGUtil {
 
         // Make sure the longitude is between -180.00 .. 179.99..
         // Convert values on 0-360 range to this range.
-        double lonTemp = (lon + 180) - ((lon + 180) / 360) * 360 - 180;
+        double lonTemp = (lon + 180) - (int)((lon + 180) / 360) * 360 - 180;
         double latRad = lat     * DEG_2_RAD;
         double lonRad = lonTemp * DEG_2_RAD;
 
         Integer zoneNumber;
 
         // user-supplied zone number will force coordinates to be computed in a particular zone
-        if (zone == null) {
+        if (zone == null || zone == 0) {
             zoneNumber = getZoneNumber(lat, lon);
         }
         else {
@@ -514,6 +513,7 @@ public class USNGUtil {
                 + (61 - 58 * T + T * T + 600 * C - 330 * ECC_PRIME_SQUARED )
                 * (A * A * A * A * A * A) / 720)));
 
+        utmcoords.clear();
         utmcoords.add(0, UTMEasting);
         utmcoords.add(1, UTMNorthing);
         utmcoords.add(2, zoneNumber);
@@ -540,7 +540,7 @@ public class USNGUtil {
         // remove 500,000 meter offset for longitude
         double xUTM = UTMEasting - EASTING_OFFSET;
         double yUTM = UTMNorthing;
-        double zoneNumber = UTMZoneNumber;
+        int zoneNumber = UTMZoneNumber;
 
         // origin longitude for the zone (+3 puts origin in zone center)
         double lonOrigin = (zoneNumber - 1) * 6 - 180 + 3;
@@ -556,7 +556,7 @@ public class USNGUtil {
         double phi1Rad = mu + (3 * E1 / 2 - 27 * E1 * E1 * E1 / 32 ) * Math.sin( 2 * mu)
                 + ( 21 * E1 * E1 / 16 - 55 * E1 * E1 * E1 * E1 / 32) * Math.sin( 4 * mu)
                 + (151 * E1 * E1 * E1 / 96) * Math.sin(6 * mu);
-        double phi1 = phi1Rad * RAD_2_DEG;
+        //double phi1 = phi1Rad * RAD_2_DEG;
 
         // Terms used in the conversion equations
         double N1 = EQUATORIAL_RADIUS / Math.sqrt( 1 - ECC_SQUARED * Math.sin(phi1Rad) *

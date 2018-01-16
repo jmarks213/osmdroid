@@ -30,15 +30,15 @@ public class USNGGrids {
     double p_eLng;
 
     public USNGGrids (USNGGeoRectangle geoRectangle, int interval, int zoomLevel) {
-        nLat = geoRectangle.getnLat();
-        sLat = geoRectangle.getsLat();
-        wLng = geoRectangle.getwLng();
-        eLng = geoRectangle.geteLng();
+        this.sLat = geoRectangle.getsLat();
+        this.wLng = geoRectangle.getwLng();
+        this.nLat = geoRectangle.getnLat();
+        this.eLng = geoRectangle.geteLng();
 
         this.interval = interval;
 
-        ProjCoordinate nw = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(nLat, wLng));
-        ProjCoordinate se = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(sLat, eLng));
+        ProjCoordinate nw = USNGUtil.toEPSG3857fromEPSG4326(new ProjCoordinate(this.wLng, this.nLat));
+        ProjCoordinate se = USNGUtil.toEPSG3857fromEPSG4326(new ProjCoordinate(this.eLng, this.sLat));
         //PointL nw = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(nLat, wLng));
         //PointL se = USNGUtil.toEPSG3857fromEPSG4326(new GeoPoint(sLat, eLng));
         //Point nw = Mercator.projectGeoPoint(nLat, wLng, zoomLevel, null);
@@ -101,8 +101,8 @@ public class USNGGrids {
 
         USNGUtil.LLtoUTM(this.nLat, eLng_temp, utmcoords, zone);
 
-        double ne_utm_e = (Math.floor((Double)utmcoords.get(0)/this.interval+1)*this.interval)+this.interval;
-        double ne_utm_n = (Math.floor((Double)utmcoords.get(1)/this.interval+1)*this.interval)+this.interval;
+        int ne_utm_e = (int)((Math.floor((Double)utmcoords.get(0)/this.interval+1)*this.interval)+this.interval);
+        int ne_utm_n = (int)((Math.floor((Double)utmcoords.get(1)/this.interval+1)*this.interval)+this.interval);
         GeoPoint geocoords;
         ArrayList<Double> northings = new ArrayList<>();   // used to calculate 100K label positions
         ArrayList<Double> eastings = new ArrayList<>();    // used to calculate 100K label positions
@@ -128,7 +128,7 @@ public class USNGGrids {
         // for each e-w line that covers the cell, with overedge
         for (i=sw_utm_n, j=0; i<ne_utm_n; i+=this.interval,j++) {
             geocoords = new GeoPoint(0.0,0.0);
-            ArrayList<GeoPoint> temp = new ArrayList<>();   // holds extended lines
+            ArrayList<ProjCoordinate> temp = new ArrayList<>();   // holds extended lines
             ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();  // holds lines clipped to GZD bounds
 
             // collect coords to be used to place markers
@@ -140,33 +140,20 @@ public class USNGGrids {
             // calculate  line segments of one e-w line
             for (m=sw_utm_e,n=0; m<=ne_utm_e; m+=precision,n++) {
                 USNGUtil.UTMtoLL(i,m,zone,geocoords);
-                temp.add(n, USNGUtil.toEPSG4326fromEPSG3857GeoPoint(geocoords));
+                ProjCoordinate result = USNGUtil.toEPSG3857fromEPSG4326(new ProjCoordinate(geocoords.getLongitude(), geocoords.getLatitude()));
+                temp.add(n, result);
+                //temp.add(n, USNGUtil.toEPSG4326fromEPSG3857GeoPoint(geocoords));
             }
 
-
-            /* clipping routine...clip e-w grid lines to GZD boundary
-            //    case of final point in the array is not covered
-            for (p=0; p<temp.size(); p++) {
-                if (this.clipToGZD(temp,p)) {
-                    gr100kCoord.add(temp.get(p));
+            // clipping routine...clip e-w grid lines to GZD boundary
+            // case of final point in the array is not covered
+            for (p=0; p < temp.size()-1 ; p++) {
+                if (clipToGZD(temp,p)) {
+                    gr100kCoord.add(new GeoPoint(temp.get(p).y, temp.get(p).x));
                 }
             }
-            */
-            /***************************** For debugging
-            ArrayList<PointL> pProjected = new ArrayList<>(temp.size());
-            pProjected.clear();
-            for (final GeoPoint geoPoint : temp) {
-                Point mercator = USNGUtil.EPSG4326_TO_EPSG900913(geoPoint);
-                pProjected.add(projection.toMercatorPixels(
-                        mercator.x, mercator.y, null));
-            }
-            ArrayList<Point> pixelsPoints = new ArrayList<>(temp.size());
-            for (PointL pointL : pProjected) {
-                pixelsPoints.add(projection.toPixelsFromProjected(pointL, null));
-            }
-             **/
 
-            this.gridlines.add(USNGUtil.createPolyline(temp));  // array of e-w grid line segments
+            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of e-w grid line segments
         }
 
         northings.add(k++, this.nLat);
@@ -175,11 +162,10 @@ public class USNGGrids {
         if (this.interval > 1000) { eastings.add(0, wLng_temp); }  // west bounary of viewport
         k=1;
 
-
         // for each n-s line that covers the cell, with overedge
         for (i=sw_utm_e; i<ne_utm_e; i+=this.interval,j++) {
             geocoords = new GeoPoint(0.0,0.0);
-            ArrayList<GeoPoint> temp = new ArrayList<>();   // holds extended lines
+            ArrayList<ProjCoordinate> temp = new ArrayList<>();   // holds extended lines
             ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();  // holds lines clipped to GZD bounds
 
             // collect coords to be used to place markers
@@ -192,18 +178,18 @@ public class USNGGrids {
 
             for (m=sw_utm_n,n=0; m<=ne_utm_n; m+=precision,n++) {
                 USNGUtil.UTMtoLL(m,i,zone,geocoords);
-                temp.set(n, USNGUtil.toEPSG4326fromEPSG3857GeoPoint(geocoords));
+                temp.set(n, USNGUtil.toEPSG3857fromEPSG4326(new ProjCoordinate(geocoords.getLongitude(), geocoords.getLatitude())));
             }
 
-            /* clipping routine...clip n-s grid lines to GZD boundary
+            // clipping routine...clip n-s grid lines to GZD boundary
             for (p=0; p<temp.size()-1; p++) {
                 if (this.clipToGZD(temp,p)) {
-                    gr100kCoord.add(temp.get(p));
+                    gr100kCoord.add(new GeoPoint(temp.get(p).y, temp.get(p).x));
                 }
             }
-            */
 
-            this.gridlines.add(USNGUtil.createPolyline(temp));  // array of n-s grid line segments
+
+            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of n-s grid line segments
         }
         eastings.add(k, eLng_temp); //this.elng  // east boundary of viewport
 
@@ -227,13 +213,13 @@ public class USNGGrids {
 
     }  // end computeOneCell
 
-    private boolean clipToGZD (List<GeoPoint> geoPoints, int index) {
+    private boolean clipToGZD (List<ProjCoordinate> coordinates, int index) {
         double temp;
         double t;
-        double u1 = geoPoints.get(index).getLatitude();
-        double v1 = geoPoints.get(index).getLongitude();
-        double u2 = geoPoints.get(index).getLatitude();
-        double v2 = geoPoints.get(index).getLongitude();
+        double u1 = coordinates.get(index).x;
+        double v1 = coordinates.get(index).y;
+        double u2 = coordinates.get(index+1).x;
+        double v2 = coordinates.get(index+1).y;
         byte code1 = outCode(v1, u1);
         byte code2 = outCode(v2,u2);
         if ((code1 & code2) != 0) { // line segment outside window...don't draw it
@@ -260,32 +246,32 @@ public class USNGGrids {
             u1 += t*(u2-u1);
             v1 = this.p_nLat;
             //cp[p] = new GLatLng(v1,u1)
-            geoPoints.get(index).setLatitude(u1);
-            geoPoints.get(index).setLongitude(v1);
+            coordinates.get(index).x = u1;
+            coordinates.get(index).y = v1;
         }
         else if ((code1 & 4) == 4) { // clip along southern edge
             t = (this.p_sLat - v1)/(v2-v1);
             u1 += t*(u2-u1);
             v1 = this.p_sLat;
             //cp[p] = new GLatLng(v1,u1)
-            geoPoints.get(index).setLatitude(u1);
-            geoPoints.get(index).setLongitude(v1);
+            coordinates.get(index).x = u1;
+            coordinates.get(index).y = v1;
         }
         else if ((code1 & 1) == 1) { // clip along west edge
             t = (this.p_wLng - u1)/(u2-u1);
             v1 += t*(v2-v1);
             u1 = this.p_wLng;
             //cp[p] = new GLatLng(v1,u1)
-            geoPoints.get(index).setLatitude(u1);
-            geoPoints.get(index).setLongitude(v1);
+            coordinates.get(index).x = u1;
+            coordinates.get(index).y = v1;
         }
         else if ((code1 & 2) == 2) { // clip along east edge
             t = (this.p_eLng - u1)/(u2-u1);
             v1 += t*(v2-v1);
             u1 = this.p_eLng;
             //cp[p] = new GLatLng(v1,u1)
-            geoPoints.get(index).setLatitude(u1);
-            geoPoints.get(index).setLongitude(v1);
+            coordinates.get(index).x = u1;
+            coordinates.get(index).y = v1;
         }
 
         return true;
