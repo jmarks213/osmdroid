@@ -24,10 +24,15 @@ public class USNGViewPort {
 
     public USNGViewPort(BoundingBox mapViewBounds) {
 
-        wLng = (int) mapViewBounds.getLonWest();
-        nLat = (int) mapViewBounds.getLatNorth();
-        eLng = (int) mapViewBounds.getLonEast();
-        sLat = (int) mapViewBounds.getLatSouth();
+        // push the corners of the view out so that lines extend off screen
+        final int PUSH_BOUNDS_LAT = 3;
+        final int PUSH_BOUNTS_LON = 6;
+        // push the northwest corner further out so more lines are drawn
+        wLng = mapViewBounds.getLonWest() - PUSH_BOUNTS_LON < -180 ? -180 : (int) mapViewBounds.getLonWest() - PUSH_BOUNTS_LON;
+        nLat = mapViewBounds.getLatNorth() + PUSH_BOUNDS_LAT > 90 ? 90 : (int) mapViewBounds.getLatNorth() + PUSH_BOUNDS_LAT;
+
+        eLng = mapViewBounds.getLonEast() + PUSH_BOUNDS_LAT > 180 ? 180 : (int) mapViewBounds.getLonEast() + PUSH_BOUNDS_LAT;
+        sLat = mapViewBounds.getLatSouth() - PUSH_BOUNTS_LON < -90 ? -90 : (int) mapViewBounds.getLatSouth() - PUSH_BOUNTS_LON;
 
         if (wLng < -180 && eLng < 0 && eLng > -180) {
             idlModel = 1;  // viewport contains IDL and uses west hemisphere coordinate system

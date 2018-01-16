@@ -41,7 +41,7 @@ public class USNGOverlay {
             List<GeoPoint> tempGeoPointsList;
             Polyline tempPolyline;
 
-            for (int i=1; i < latlines.size()-1 ; i++) {
+            for (int i= 0 ; i < latlines.size() ; i++) {
 
                 tempGeoPointsList = new ArrayList();
                 for (int j=0; j < lnglines.size() ; j++) {
@@ -52,7 +52,7 @@ public class USNGOverlay {
                 unsgGridLines.add(USNGUtil.createPolyline(tempGeoPointsList));
             }  // for each latitude line
 
-            for (int i = 1 ; i < lnglines.size()-1 ; i++) {
+            for (int i = 0 ; i < lnglines.size() ; i++) {
                 // insert code for Norway and Svalbard special cases here
 
                 // normal case, not in Norway or Svalbard
