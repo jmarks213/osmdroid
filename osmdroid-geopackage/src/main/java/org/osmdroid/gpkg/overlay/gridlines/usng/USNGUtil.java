@@ -8,21 +8,17 @@ import org.osgeo.proj4j.CoordinateReferenceSystem;
 import org.osgeo.proj4j.CoordinateTransform;
 import org.osgeo.proj4j.CoordinateTransformFactory;
 import org.osgeo.proj4j.ProjCoordinate;
-import org.osgeo.proj4j.Registry;
-import org.osgeo.proj4j.datum.Datum;
+import org.osgeo.proj4j.datum.Ellipsoid;
 import org.osgeo.proj4j.proj.Projection;
-import org.osgeo.proj4j.util.ProjectionUtil;
+import org.osgeo.proj4j.util.CRSCache;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.util.PointL;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
-import mil.nga.geopackage.projection.ProjectionConstants;
 import mil.nga.geopackage.projection.ProjectionFactory;
-import mil.nga.geopackage.projection.ProjectionTransform;
 
 /**
  * Created by Jason on 11/13/2017.
@@ -32,16 +28,16 @@ public class USNGUtil {
 
     /**
      * EPSG:4326 parameters
-     *
+     * <p>
      * +proj=longlat
      * +datum=WGS84
      * +no_defs
      */
-    private static final String[] EPSG_4326_PARAMETERS = {"+proj=longlat","+datum=WGS84","+no_defs"};
+    private static final String[] EPSG_4326_PARAMETERS = {"+proj=longlat", "+datum=WGS84", "+no_defs"};
 
     /**
      * EPSG:3857 parameters
-     *
+     * <p>
      * +proj=merc
      * +a=6378137
      * +b=6378137
@@ -55,12 +51,9 @@ public class USNGUtil {
      * +wktext
      * +no_defs
      */
-    private static final String[] EPSG_3857_PARAMETERS = {"+proj=merc","+a=6378137","+b=6378137",
-            "+lat_ts=0.0","+lon_0=0.0","+x_0=0.0","+y_0=0","+k=1.0","+units=m","+nadgrids=@null",
-            "+wktext","+no_defs"};
-
-    private static CoordinateReferenceSystem EPSG_4326_COORD_REF;
-    private static CoordinateReferenceSystem EPSG_3857_COORD_REF;
+    private static final String[] EPSG_3857_PARAMETERS = {"+proj=merc", "+a=6378137", "+b=6378137",
+            "+lat_ts=0.0", "+lon_0=0.0", "+x_0=0.0", "+y_0=0", "+k=1.0", "+units=m", "+nadgrids=@null",
+            "+wktext", "+no_defs"};
 
     /**
      * Constants
@@ -79,7 +72,7 @@ public class USNGUtil {
     private static final int GRIDSQUARE_SET_ROW_SIZE = 20; // row height of grid square set
 
     // UTM offsets
-    private static final double EASTING_OFFSET  = 500000.0;   // (meters)
+    private static final double EASTING_OFFSET = 500000.0;   // (meters)
     private static final double NORTHING_OFFSET = 10000000.0; // (meters)
 
     // scale factor of central meridian
@@ -132,26 +125,23 @@ public class USNGUtil {
             return null;
         }
 
-        int lonTemp = (int)((lon + 180) - (int)((lon + 180) / 360) * 360 - 180);
-        int zoneNumber = (int)((lonTemp + 180) / 6) + 1;
+        int lonTemp = (int) ((lon + 180) - (int) ((lon + 180) / 360) * 360 - 180);
+        int zoneNumber = (int) ((lonTemp + 180) / 6) + 1;
 
         // Handle special case of west coast of Norway
-        if ( lat >= 56.0 && lat < 64.0 && lonTemp >= 3.0 && lonTemp < 12.0 ) {
+        if (lat >= 56.0 && lat < 64.0 && lonTemp >= 3.0 && lonTemp < 12.0) {
             zoneNumber = 32;
         }
 
         // Special zones for Svalbard
-        if ( lat >= 72.0 && lat < 84.0 ) {
-            if ( lonTemp >= 0.0  && lonTemp <  9.0 ) {
+        if (lat >= 72.0 && lat < 84.0) {
+            if (lonTemp >= 0.0 && lonTemp < 9.0) {
                 zoneNumber = 31;
-            }
-            else if ( lonTemp >= 9.0  && lonTemp < 21.0 ) {
+            } else if (lonTemp >= 9.0 && lonTemp < 21.0) {
                 zoneNumber = 33;
-            }
-            else if ( lonTemp >= 21.0 && lonTemp < 33.0 ) {
+            } else if (lonTemp >= 21.0 && lonTemp < 33.0) {
                 zoneNumber = 35;
-            }
-            else if ( lonTemp >= 33.0 && lonTemp < 42.0 ) {
+            } else if (lonTemp >= 33.0 && lonTemp < 42.0) {
                 zoneNumber = 37;
             }
         }
@@ -190,11 +180,11 @@ public class USNGUtil {
             letterDesignator = 'Q';
         else if ((16 > lat) && (lat >= 8))
             letterDesignator = 'P';
-        else if (( 8 > lat) && (lat >= 0))
+        else if ((8 > lat) && (lat >= 0))
             letterDesignator = 'N';
-        else if (( 0 > lat) && (lat >= -8))
+        else if ((0 > lat) && (lat >= -8))
             letterDesignator = 'M';
-        else if ((-8> lat) && (lat >= -16))
+        else if ((-8 > lat) && (lat >= -16))
             letterDesignator = 'L';
         else if ((-16 > lat) && (lat >= -24))
             letterDesignator = 'K';
@@ -227,7 +217,7 @@ public class USNGUtil {
      See p. 10 of the "United States National Grid" white paper.
 
      ***************************************************************************/
-    private static int findSet (int zoneNum) {
+    private static int findSet(int zoneNum) {
         zoneNum = zoneNum % 6;
 
         switch (zoneNum) {
@@ -274,7 +264,7 @@ public class USNGUtil {
         double east_1m = Math.round(easting);
 
         // Get the column position for the square identifier that contains the point
-        while (east_1m >= BLOCK_SIZE){
+        while (east_1m >= BLOCK_SIZE) {
             east_1m = east_1m - BLOCK_SIZE;
             col++;
         }
@@ -301,16 +291,14 @@ public class USNGUtil {
         // handle case of last row
         if (row == 0) {
             row = GRIDSQUARE_SET_ROW_SIZE - 1;
-        }
-        else {
+        } else {
             row--;
         }
 
         // handle case of last column
         if (col == 0) {
             col = GRIDSQUARE_SET_COL_SIZE - 1;
-        }
-        else {
+        } else {
             col--;
         }
 
@@ -318,30 +306,30 @@ public class USNGUtil {
         String rowIds = new String();
         StringBuilder sb = new StringBuilder();
 
-        switch(set) {
+        switch (set) {
             case 1:
-                columnIds="ABCDEFGH";              // column ids
-                rowIds="ABCDEFGHJKLMNPQRSTUV";  // row ids
+                columnIds = "ABCDEFGH";              // column ids
+                rowIds = "ABCDEFGHJKLMNPQRSTUV";  // row ids
                 break;
             case 2:
-                columnIds="JKLMNPQR";
-                rowIds="FGHJKLMNPQRSTUVABCDE";
+                columnIds = "JKLMNPQR";
+                rowIds = "FGHJKLMNPQRSTUVABCDE";
                 break;
             case 3:
-                columnIds="STUVWXYZ";
-                rowIds="ABCDEFGHJKLMNPQRSTUV";
+                columnIds = "STUVWXYZ";
+                rowIds = "ABCDEFGHJKLMNPQRSTUV";
                 break;
             case 4:
-                columnIds="ABCDEFGH";
-                rowIds="FGHJKLMNPQRSTUVABCDE";
+                columnIds = "ABCDEFGH";
+                rowIds = "FGHJKLMNPQRSTUVABCDE";
                 break;
             case 5:
-                columnIds="JKLMNPQR";
-                rowIds="ABCDEFGHJKLMNPQRSTUV";
+                columnIds = "JKLMNPQR";
+                rowIds = "ABCDEFGHJKLMNPQRSTUV";
                 break;
             case 6:
-                columnIds="STUVWXYZ";
-                rowIds="FGHJKLMNPQRSTUVABCDE";
+                columnIds = "STUVWXYZ";
+                rowIds = "FGHJKLMNPQRSTUVABCDE";
                 break;
         }
 
@@ -355,7 +343,7 @@ public class USNGUtil {
      * @param geoPoints a list of osmdroid GeoPoints
      * @return the built Polyline object
      */
-    public static Polyline createPolyline (List<GeoPoint> geoPoints) {
+    public static Polyline createPolyline(List<GeoPoint> geoPoints) {
         Polyline polyline = new Polyline();
         polyline.setWidth(2.0f);
         polyline.setColor(Color.BLACK);
@@ -366,8 +354,10 @@ public class USNGUtil {
     /**
      * From EPSG 900913/3857 To EPSG:4326
      */
-    public static GeoPoint toEPSG4326fromEPSG3857GeoPoint (GeoPoint coord) {
-        setupCoordRefs();
+    public static GeoPoint toEPSG4326fromEPSG3857GeoPoint(GeoPoint coord) {
+        CRSCache cache = new CRSCache();
+        CoordinateReferenceSystem EPSG_4326_COORD_REF = cache.createFromName("EPSG:4326");
+        CoordinateReferenceSystem EPSG_3857_COORD_REF = cache.createFromName("EPSG:3857");
 
         CoordinateTransformFactory f = new CoordinateTransformFactory();
         CoordinateTransform t = f.createTransform(
@@ -383,8 +373,10 @@ public class USNGUtil {
     /**
      * From EPSG:4326 To EPSG:900913/3857
      */
-    public static ProjCoordinate toEPSG3857fromEPSG4326 (ProjCoordinate source) {
-        setupCoordRefs();
+    public static ProjCoordinate toEPSG3857fromEPSG4326(ProjCoordinate source) {
+        CRSCache cache = new CRSCache();
+        CoordinateReferenceSystem EPSG_4326_COORD_REF = cache.createFromName("EPSG:4326");
+        CoordinateReferenceSystem EPSG_3857_COORD_REF = cache.createFromName("EPSG:3857");
 
         CoordinateTransformFactory f = new CoordinateTransformFactory();
         CoordinateTransform t = f.createTransform(
@@ -394,35 +386,26 @@ public class USNGUtil {
         ProjCoordinate dest = new ProjCoordinate();
         t.transform(source, dest);
 
-        return new ProjCoordinate((long)dest.x, (long)dest.y);
+        return new ProjCoordinate((long) dest.x, (long) dest.y);
     }
 
     /**
-     * Initialize the CoordinateReferenceSystem objects that are needed for displaying the USNG grid
-     * They take a long time (seconds) to initialize so it's better to keep a static reference to it
-     * and set them to null after the activity has ended
+     * preload the CRS which will be needed
      */
-    private static void setupCoordRefs() {
-        if (EPSG_3857_COORD_REF == null || EPSG_4326_COORD_REF == null) {
-            CRSFactory crsFactory = new CRSFactory();
-            if (EPSG_4326_COORD_REF == null) {
-                EPSG_4326_COORD_REF = crsFactory.createFromName("EPSG:4326");
-            }
-            if (EPSG_3857_COORD_REF == null) {
-                EPSG_3857_COORD_REF = crsFactory.createFromName("EPSG:3857");
-            }
-        }
+    public static void initializeCRSCache() {
+        CRSCache cache = new CRSCache();
+        cache.createFromName("EPSG:4326");
+        cache.createFromName("EPSG:3857");
     }
 
-
-    public static Point EPSG4326_TO_EPSG900913 (GeoPoint geoPoint) {
+    public static Point EPSG4326_TO_EPSG900913(GeoPoint geoPoint) {
         double lon = geoPoint.getLongitude();
         double lat = geoPoint.getLatitude();
         double x = lon * 20037508.34 / 180;
         double y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
         y = y * 20037508.34 / 180;
 
-        return new Point((int)x, (int)y);
+        return new Point((int) x, (int) y);
     }
 
     /***************** convert latitude, longitude to UTM  *******************
@@ -442,6 +425,7 @@ public class USNGUtil {
 
      ***************************************************************************/
     public static final String UNDEFINED_STR = "undefined";
+
     public static void LLtoUTM(double lat, double lon, ArrayList<Object> utmcoords, Integer zone) throws Exception {
         // utmcoords is a 2-D array declared by the calling routine
         // note: input of lon = 180 or -180 with zone 60 not allowed; use 179.9999
@@ -451,7 +435,7 @@ public class USNGUtil {
 
         // Constrain reporting USNG coords to the latitude range [80S .. 84N]
         /////////////////
-        if (lat > 84.0 || lat < -80.0){
+        if (lat > 84.0 || lat < -80.0) {
             throw new Exception("USNGUtil, LLtoUTM" + UNDEFINED_STR);
         }
         //////////////////////
@@ -465,8 +449,8 @@ public class USNGUtil {
 
         // Make sure the longitude is between -180.00 .. 179.99..
         // Convert values on 0-360 range to this range.
-        double lonTemp = (lon + 180) - (int)((lon + 180) / 360) * 360 - 180;
-        double latRad = lat     * DEG_2_RAD;
+        double lonTemp = (lon + 180) - (int) ((lon + 180) / 360) * 360 - 180;
+        double latRad = lat * DEG_2_RAD;
         double lonRad = lonTemp * DEG_2_RAD;
 
         Integer zoneNumber;
@@ -474,8 +458,7 @@ public class USNGUtil {
         // user-supplied zone number will force coordinates to be computed in a particular zone
         if (zone == null || zone == 0) {
             zoneNumber = getZoneNumber(lat, lon);
-        }
-        else {
+        } else {
             zoneNumber = zone;
         }
 
@@ -494,23 +477,23 @@ public class USNGUtil {
         // Note that the term Mo drops out of the "M" equation, because phi
         // (latitude crossing the central meridian, lambda0, at the origin of the
         //  x,y coordinates), is equal to zero for UTM.
-        double M = EQUATORIAL_RADIUS * (( 1 - ECC_SQUARED / 4
+        double M = EQUATORIAL_RADIUS * ((1 - ECC_SQUARED / 4
                 - 3 * (ECC_SQUARED * ECC_SQUARED) / 64
                 - 5 * (ECC_SQUARED * ECC_SQUARED * ECC_SQUARED) / 256) * latRad
-                - ( 3 * ECC_SQUARED / 8 + 3 * ECC_SQUARED * ECC_SQUARED / 32
+                - (3 * ECC_SQUARED / 8 + 3 * ECC_SQUARED * ECC_SQUARED / 32
                 + 45 * ECC_SQUARED * ECC_SQUARED * ECC_SQUARED / 1024)
                 * Math.sin(2 * latRad) + (15 * ECC_SQUARED * ECC_SQUARED / 256
                 + 45 * ECC_SQUARED * ECC_SQUARED * ECC_SQUARED / 1024) * Math.sin(4 * latRad)
                 - (35 * ECC_SQUARED * ECC_SQUARED * ECC_SQUARED / 3072) * Math.sin(6 * latRad));
 
         double UTMEasting = (k0 * N * (A + (1 - T + C) * (A * A * A) / 6
-                + (5 - 18 * T + T * T + 72 * C - 58 * ECC_PRIME_SQUARED )
+                + (5 - 18 * T + T * T + 72 * C - 58 * ECC_PRIME_SQUARED)
                 * (A * A * A * A * A) / 120)
                 + EASTING_OFFSET);
 
-        double UTMNorthing = (k0 * (M + N * Math.tan(latRad) * ( (A * A) / 2 + (5 - T + 9
-                * C + 4 * C * C ) * (A * A * A * A) / 24
-                + (61 - 58 * T + T * T + 600 * C - 330 * ECC_PRIME_SQUARED )
+        double UTMNorthing = (k0 * (M + N * Math.tan(latRad) * ((A * A) / 2 + (5 - T + 9
+                * C + 4 * C * C) * (A * A * A * A) / 24
+                + (61 - 58 * T + T * T + 600 * C - 330 * ECC_PRIME_SQUARED)
                 * (A * A * A * A * A * A) / 720)));
 
         utmcoords.clear();
@@ -518,6 +501,49 @@ public class USNGUtil {
         utmcoords.add(1, UTMNorthing);
         utmcoords.add(2, zoneNumber);
     }
+
+
+    public static void LLtoUTMExperimental(double lat, double lon, ArrayList<Object> utmcoords, Integer zone) {
+
+        double d = lat;
+        double d1 = lon;
+        double d2 = EQUATORIAL_RADIUS;
+        double d3 = ECC_SQUARED;
+        double d4 = 0.99960000000000004D;
+        double d12 = (d1 + 180D) - (double) ((int) ((d1 + 180D) / 360D) * 360) - 180D;
+        double d13 = d * 0.017453292519943295D;
+        double d14 = d12 * 0.017453292519943295D;
+        int j = (int) ((d12 + 180D) / 6D) + 1;
+        if (d >= 56D && d < 64D && d12 >= 3D && d12 < 12D)
+            j = 32;
+        if (d >= 72D && d < 84D)
+            if (d12 >= 0.0D && d12 < 9D)
+                j = 31;
+            else if (d12 >= 9D && d12 < 21D)
+                j = 33;
+            else if (d12 >= 21D && d12 < 33D)
+                j = 35;
+            else if (d12 >= 33D && d12 < 42D)
+                j = 37;
+        double d5 = ((j - 1) * 6 - 180) + 3;
+        double d15 = d5 * 0.017453292519943295D;
+        double d6 = d3 / (1.0D - d3);
+        double d7 = d2 / Math.sqrt(1.0D - d3 * Math.sin(d13) * Math.sin(d13));
+        double d8 = Math.tan(d13) * Math.tan(d13);
+        double d9 = d6 * Math.cos(d13) * Math.cos(d13);
+        double d10 = Math.cos(d13) * (d14 - d15);
+        double d11 = d2 * ((((1.0D - d3 / 4D - (3D * d3 * d3) / 64D - (5D * d3 * d3 * d3) / 256D) * d13 - ((3D * d3) / 8D + (3D * d3 * d3) / 32D + (45D * d3 * d3 * d3) / 1024D) * Math.sin(2D * d13)) + ((15D * d3 * d3) / 256D + (45D * d3 * d3 * d3) / 1024D) * Math.sin(4D * d13)) - ((35D * d3 * d3 * d3) / 3072D) * Math.sin(6D * d13));
+        float f2 = (float) (d4 * d7 * (d10 + (((1.0D - d8) + d9) * d10 * d10 * d10) / 6D + ((((5D - 18D * d8) + d8 * d8 + 72D * d9) - 58D * d6) * d10 * d10 * d10 * d10 * d10) / 120D) + 500000D);
+        float f3 = (float) (d4 * (d11 + d7 * Math.tan(d13) * ((d10 * d10) / 2D + (((5D - d8) + 9D * d9 + 4D * d9 * d9) * d10 * d10 * d10 * d10) / 24D + ((((61D - 58D * d8) + d8 * d8 + 600D * d9) - 330D * d6) * d10 * d10 * d10 * d10 * d10 * d10) / 720D)));
+        if (d < 0.0D)
+            f3 += 1E+007F;
+
+        utmcoords.clear();
+        utmcoords.add(0, f2);
+        utmcoords.add(1, f3);
+        utmcoords.add(2, zone);
+    }
+
 
     /**************  convert UTM coords to decimal degrees *********************
 
@@ -548,18 +574,18 @@ public class USNGUtil {
         // M is the "true distance along the central meridian from the Equator to phi
         // (latitude)
         double M = yUTM / k0;
-        double mu = M / ( EQUATORIAL_RADIUS * (1 - ECC_SQUARED / 4 - 3 * ECC_SQUARED *
-                ECC_SQUARED / 64 - 5 * ECC_SQUARED * ECC_SQUARED * ECC_SQUARED / 256 ));
+        double mu = M / (EQUATORIAL_RADIUS * (1 - ECC_SQUARED / 4 - 3 * ECC_SQUARED *
+                ECC_SQUARED / 64 - 5 * ECC_SQUARED * ECC_SQUARED * ECC_SQUARED / 256));
 
         // phi1 is the "footprint latitude" or the latitude at the central meridian which
         // has the same y coordinate as that of the point (phi (lat), lambda (lon) ).
-        double phi1Rad = mu + (3 * E1 / 2 - 27 * E1 * E1 * E1 / 32 ) * Math.sin( 2 * mu)
-                + ( 21 * E1 * E1 / 16 - 55 * E1 * E1 * E1 * E1 / 32) * Math.sin( 4 * mu)
+        double phi1Rad = mu + (3 * E1 / 2 - 27 * E1 * E1 * E1 / 32) * Math.sin(2 * mu)
+                + (21 * E1 * E1 / 16 - 55 * E1 * E1 * E1 * E1 / 32) * Math.sin(4 * mu)
                 + (151 * E1 * E1 * E1 / 96) * Math.sin(6 * mu);
         //double phi1 = phi1Rad * RAD_2_DEG;
 
         // Terms used in the conversion equations
-        double N1 = EQUATORIAL_RADIUS / Math.sqrt( 1 - ECC_SQUARED * Math.sin(phi1Rad) *
+        double N1 = EQUATORIAL_RADIUS / Math.sqrt(1 - ECC_SQUARED * Math.sin(phi1Rad) *
                 Math.sin(phi1Rad));
         double T1 = Math.tan(phi1Rad) * Math.tan(phi1Rad);
         double C1 = ECC_PRIME_SQUARED * Math.cos(phi1Rad) * Math.cos(phi1Rad);
@@ -568,7 +594,7 @@ public class USNGUtil {
         double D = xUTM / (N1 * k0);
 
         // Calculate latitude, in decimal degrees
-        double lat = phi1Rad - ( N1 * Math.tan(phi1Rad) / R1) * (D * D / 2 - (5 + 3 * T1 + 10
+        double lat = phi1Rad - (N1 * Math.tan(phi1Rad) / R1) * (D * D / 2 - (5 + 3 * T1 + 10
                 * C1 - 4 * C1 * C1 - 9 * ECC_PRIME_SQUARED) * D * D * D * D / 24 + (61 + 90 *
                 T1 + 298 * C1 + 45 * T1 * T1 - 252 * ECC_PRIME_SQUARED - 3 * C1 * C1) * D * D *
                 D * D * D * D / 720);
@@ -583,4 +609,82 @@ public class USNGUtil {
         ret.setLatitude(lat);
         ret.setLongitude(lon);
     }
+
+    public static void UTMtoLLExperimental(double UTMNorthing, double UTMEasting, Integer UTMZoneNumber, GeoPoint ret) {
+
+        double d = 0.99960000000000004D;
+
+        double d1 = EQUATORIAL_RADIUS;
+        double d2 = ECC_SQUARED;
+        double d4 = (1.0D - Math.sqrt(1.0D - d2)) / (1.0D + Math.sqrt(1.0D - d2));
+        double d15 = (double) UTMEasting - 500000D;
+        double d16 = UTMNorthing;
+        boolean flag;
+        /*if(c >= 'N')
+        {
+            flag = true;
+        } else
+        {
+            boolean flag1 = false;*/
+        //    d16 -= 10000000D;
+        //}
+        double d11 = ((UTMZoneNumber - 1) * 6 - 180) + 3;
+        double d3 = d2 / (1.0D - d2);
+        double d10 = d16 / d;
+        double d12 = d10 / (d1 * (1.0D - d2 / 4D - (3D * d2 * d2) / 64D - (5D * d2 * d2 * d2) / 256D));
+        double d14 = d12 + ((3D * d4) / 2D - (27D * d4 * d4 * d4) / 32D) * Math.sin(2D * d12) + ((21D * d4 * d4) / 16D - (55D * d4 * d4 * d4 * d4) / 32D) * Math.sin(4D * d12) + ((151D * d4 * d4 * d4) / 96D) * Math.sin(6D * d12);
+        double d13 = d14 * 57.295779513082323D;
+        double d5 = d1 / Math.sqrt(1.0D - d2 * Math.sin(d14) * Math.sin(d14));
+        double d6 = Math.tan(d14) * Math.tan(d14);
+        double d7 = d3 * Math.cos(d14) * Math.cos(d14);
+        double d8 = (d1 * (1.0D - d2)) / Math.pow(1.0D - d2 * Math.sin(d14) * Math.sin(d14), 1.5D);
+        double d9 = d15 / (d5 * d);
+        double d17 = d14 - ((d5 * Math.tan(d14)) / d8) * (((d9 * d9) / 2D - (((5D + 3D * d6 + 10D * d7) - 4D * d7 * d7 - 9D * d3) * d9 * d9 * d9 * d9) / 24D) + (((61D + 90D * d6 + 298D * d7 + 45D * d6 * d6) - 252D * d3 - 3D * d7 * d7) * d9 * d9 * d9 * d9 * d9 * d9) / 720D);
+        d17 *= 57.295779513082323D;
+        double d18 = ((d9 - ((1.0D + 2D * d6 + d7) * d9 * d9 * d9) / 6D) + (((((5D - 2D * d7) + 28D * d6) - 3D * d7 * d7) + 8D * d3 + 24D * d6 * d6) * d9 * d9 * d9 * d9 * d9) / 120D) / Math.cos(d14);
+        d18 = d11 + d18 * 57.295779513082323D;
+
+        ret.setLatitude(d17);
+        ret.setLongitude(d18);
+    }
+
+    /**
+     *
+     * @param projCoordinate
+     * @param zone
+     * @param letter
+     */
+    public static GeoPoint LLtoUTMpro4j(ProjCoordinate projCoordinate, int zone, char letter) {
+
+        // the epsg authority depends on the hemisphere and zone
+        StringBuilder epsgAuthority = new StringBuilder();
+        if (letter > 'N') {
+            epsgAuthority.append("EPSG:326");
+        } else {
+            epsgAuthority.append("EPSG:327");
+        }
+        epsgAuthority.append(zone);
+
+        // load the CRS for each system
+        CRSCache crsCache = new CRSCache();
+        CoordinateReferenceSystem epsg4326 = crsCache.createFromName("EPSG:4326");
+        CoordinateReferenceSystem epsgUTM = crsCache.createFromName(epsgAuthority.toString());
+
+        //
+        CoordinateTransformFactory transform = new CoordinateTransformFactory();
+        CoordinateTransform t = transform.createTransform(epsgUTM, epsg4326);
+
+        ProjCoordinate dest = new ProjCoordinate();
+        t.transform(projCoordinate, dest);
+
+        return new GeoPoint(dest.y, dest.x);
+    }
+
+    public static void LLtoUTMexperimental2(double latitude, double longitude, UTM utmcoords) {
+        WGS84 wgs84 = new WGS84(latitude, longitude);
+        utmcoords = new UTM(wgs84);
+    }
+
+    //public static void UTMtoLLexperimental2(WGS84 wgs84, ) {
+    //}
 }

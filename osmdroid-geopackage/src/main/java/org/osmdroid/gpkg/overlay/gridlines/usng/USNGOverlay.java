@@ -68,7 +68,7 @@ public class USNGOverlay {
         }
 
         // display 100K grids
-        if (zoomLevel > 6) {
+        if (zoomLevel > 5) {
             List<Polyline> grid100k = new ArrayList<>();
             try {
                  grid100k = USNGGrids.grid100k(viewPort, zoomLevel);

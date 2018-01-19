@@ -11,6 +11,8 @@ import java.util.List;
 
 public class USNGViewPort {
 
+    private static final int NUMBER_OF_LATITUDE_BANDS = 20;
+
     private int idlModel;
     private int wLng;
     private int nLat;
@@ -22,11 +24,33 @@ public class USNGViewPort {
     private List<Integer> lngCoords;
     private List<USNGGeoRectangle> geoRectangles;
 
+    public USNGViewPort(BoundingBox mapViewBounds, boolean temp) {
+        wLng = (int) mapViewBounds.getLonWest();
+        nLat = (int) mapViewBounds.getLatNorth();
+        eLng = (int) mapViewBounds.getLonEast();
+        sLat = (int) mapViewBounds.getLatSouth();
+
+        // north latitude does not exceed 84
+        if (nLat > 84) {
+            nLat = 84;
+        }
+        // south latitude does not exceed -80
+        if (sLat < -80) {
+            sLat = -80;
+        }
+
+        latCoords = new ArrayList<>(NUMBER_OF_LATITUDE_BANDS);
+        for (int tempSLat = sLat ; tempSLat < nLat ; tempSLat += 8 ) {
+            latCoords.add(tempSLat);
+        }
+    }
+
+
     public USNGViewPort(BoundingBox mapViewBounds) {
 
         // push the corners of the view out so that lines extend off screen
-        final int PUSH_BOUNDS_LAT = 3;
-        final int PUSH_BOUNTS_LON = 6;
+        final int PUSH_BOUNDS_LAT = 0;
+        final int PUSH_BOUNTS_LON = 0;
         // push the northwest corner further out so more lines are drawn
         wLng = mapViewBounds.getLonWest() - PUSH_BOUNTS_LON < -180 ? -180 : (int) mapViewBounds.getLonWest() - PUSH_BOUNTS_LON;
         nLat = mapViewBounds.getLatNorth() + PUSH_BOUNDS_LAT > 90 ? 90 : (int) mapViewBounds.getLatNorth() + PUSH_BOUNDS_LAT;
@@ -74,10 +98,7 @@ public class USNGViewPort {
             latCoords.add(0, sLat);
         }
 
-        int j = 1;
-        int lat = y1;
-        int lng = x1;
-
+        int lat = y1, j = 1;
         for ( ; lat < nLat; lat+=8, j++) {
             if (lat <= 72) {
                 latCoords.add(j, lat);
@@ -93,7 +114,8 @@ public class USNGViewPort {
         // compute the longitude coordinates that belong to this viewport
         lngCoords.add(0, wLng);
         if (wLng < eLng) {   // normal case
-            for (lng=x1, j=1; lng < eLng; lng+=6, j++) {
+            j=1;
+            for (int lng=x1 ; lng < eLng; lng+=6, j++) {
                 lngCoords.add(j,lng);
             }
         }

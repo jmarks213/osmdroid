@@ -45,7 +45,7 @@ public class USNGZoneLines {
 ////       else {
             geoPoints = new ArrayList<>();
             for (int j = 0 ; j < latCoords.size() ; j++) {
-                tempGeoPoint = new GeoPoint((double) latCoords.get(i), (double) lngCoords.get(j));
+                tempGeoPoint = new GeoPoint((double) latCoords.get(j), (double) lngCoords.get(i));
                 geoPoints.add(tempGeoPoint);
             }
 
