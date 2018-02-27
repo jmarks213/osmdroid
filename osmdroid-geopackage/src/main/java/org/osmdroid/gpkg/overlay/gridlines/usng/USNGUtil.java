@@ -27,35 +27,6 @@ import mil.nga.geopackage.projection.ProjectionFactory;
 public class USNGUtil {
 
     /**
-     * EPSG:4326 parameters
-     * <p>
-     * +proj=longlat
-     * +datum=WGS84
-     * +no_defs
-     */
-    private static final String[] EPSG_4326_PARAMETERS = {"+proj=longlat", "+datum=WGS84", "+no_defs"};
-
-    /**
-     * EPSG:3857 parameters
-     * <p>
-     * +proj=merc
-     * +a=6378137
-     * +b=6378137
-     * +lat_ts=0.0
-     * +lon_0=0.0
-     * +x_0=0.0
-     * +y_0=0
-     * +k=1.0
-     * +units=m
-     * +nadgrids=@null
-     * +wktext
-     * +no_defs
-     */
-    private static final String[] EPSG_3857_PARAMETERS = {"+proj=merc", "+a=6378137", "+b=6378137",
-            "+lat_ts=0.0", "+lon_0=0.0", "+x_0=0.0", "+y_0=0", "+k=1.0", "+units=m", "+nadgrids=@null",
-            "+wktext", "+no_defs"};
-
-    /**
      * Constants
      */
     private static final double FOURTHPI = Math.PI / 4;
