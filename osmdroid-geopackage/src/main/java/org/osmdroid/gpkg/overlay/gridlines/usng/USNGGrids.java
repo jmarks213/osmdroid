@@ -1,10 +1,7 @@
 package org.osmdroid.gpkg.overlay.gridlines.usng;
 
-import org.osgeo.proj4j.CRSFactory;
-import org.osgeo.proj4j.CoordinateReferenceSystem;
 import org.osgeo.proj4j.ProjCoordinate;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.util.PointL;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
@@ -83,37 +80,37 @@ public class USNGGrids {
 
     // instance of one utm cell
     private void computeOneCell (USNGViewPort viewport) throws Exception {
-        ArrayList<Object> utmcoords = new ArrayList();
 
-        double clng_temp = (this.wLng+this.eLng)/2;
+        double cellLngCenter = (this.wLng+this.eLng)/2;
+        double cellLatCenter = (this.sLat+this.nLat)/2;
 
-        Integer zone = USNGUtil.getZoneNumber((this.sLat+this.nLat)/2,clng_temp);
+        Integer cellZone = USNGUtil.getZoneNumber(cellLatCenter, cellLngCenter);
+        char cellLetter = USNGUtil.UTMLetterDesignator(cellLatCenter);
 
         int i,j,k,m,n,p,q;
 
         double wLng_temp = this.wLng;
 
-        //WGS84 swLL = new WGS84(this.sLat, wLng_temp);
-        //UTM swUTM = new UTM(swLL);
-        USNGUtil.LLtoUTM(this.sLat, wLng_temp, utmcoords, zone);
+        // calculate sw easting and northing
+        ProjCoordinate utmCoords = USNGUtil.LLtoUTMpro4jProj(
+                new ProjCoordinate(wLng_temp, this.sLat),
+                cellZone,
+                cellLetter);
 
-        //int sw_utm_e2 = (int)((Math.floor(swUTM.getEasting()/this.interval)*this.interval)-this.interval);
-        //int sw_utm_n2 = (int)((Math.floor(swUTM.getNorthing()/this.interval)*this.interval)-this.interval);
-        int sw_utm_e = (int)((Math.floor((Double)utmcoords.get(0)/this.interval)*this.interval)-this.interval);
-        int sw_utm_n = (int)((Math.floor((Double)utmcoords.get(1)/this.interval)*this.interval)-this.interval);
+        int sw_utm_e = (int)((Math.floor(utmCoords.x/this.interval)*this.interval)-this.interval);
+        int sw_utm_n = (int)((Math.floor(utmCoords.y/this.interval)*this.interval)-this.interval);
 
         double eLng_temp = this.eLng;
 
-        USNGUtil.LLtoUTM(this.nLat, eLng_temp, utmcoords, zone);
+        // calculate ne easting and northing
+        utmCoords = USNGUtil.LLtoUTMpro4jProj(
+                new ProjCoordinate(eLng_temp, this.nLat),
+                cellZone,
+                cellLetter);
 
-        //WGS84 neLL = new WGS84 (this.nLat, eLng_temp);
-        //UTM neUTM = new UTM(neLL);
-        WGS84 center = new WGS84((this.sLat+this.nLat)/2 ,(this.wLng+this.eLng)/2);
+        int ne_utm_e = (int)((Math.floor(utmCoords.x/this.interval+1)*this.interval)+this.interval);
+        int ne_utm_n = (int)((Math.floor(utmCoords.y/this.interval+1)*this.interval)+this.interval);
 
-        //int ne_utm_e2 = (int)((Math.floor(neUTM.getEasting()/this.interval+1)*this.interval)+this.interval);
-        //int ne_utm_n2 = (int)((Math.floor(neUTM.getNorthing()/this.interval+1)*this.interval)+this.interval);
-        int ne_utm_e = (int)((Math.floor((Double)utmcoords.get(0)/this.interval+1)*this.interval)+this.interval);
-        int ne_utm_n = (int)((Math.floor((Double)utmcoords.get(1)/this.interval+1)*this.interval)+this.interval);
         GeoPoint geocoords;
         ArrayList<Double> northings = new ArrayList<>();   // used to calculate 100K label positions
         ArrayList<Double> eastings = new ArrayList<>();    // used to calculate 100K label positions
@@ -156,12 +153,8 @@ public class USNGGrids {
 
             // calculate  line segments of one e-w line
             for (m=sw_utm_e,n=0; m<=ne_utm_e; m+=precision,n++) {
-                char letter = USNGUtil.UTMLetterDesignator(center.getLatitude());
-                //UTM utm = new UTM(zone, new UTM(center).getLetter(), m, i);
-                //WGS84 resultWGS84 = new WGS84(utm);
-                //GeoPoint result = new GeoPoint(resultWGS84.getLatitude(), resultWGS84.getLongitude());
 
-                GeoPoint result = USNGUtil.LLtoUTMpro4j(new ProjCoordinate(m, i, 0), zone, letter);
+                GeoPoint result = USNGUtil.UTMtoLLpro4jGeo(new ProjCoordinate(m, i, 0), cellZone, cellLetter);
 
                 temp.add(n, result);
             }
