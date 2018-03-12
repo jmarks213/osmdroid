@@ -1,17 +1,23 @@
 package org.osmdroid.gpkg.overlay.gridlines.usng;
 
+import android.util.Log;
+
 import org.osgeo.proj4j.ProjCoordinate;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Jason on 11/15/2017.
  */
 
 public class USNGGrids {
+    private static final String LOG_TAG = USNGGrids.class.getSimpleName();
+
     private double nLat;
     private double sLat;
     private double wLng;
@@ -66,16 +72,48 @@ public class USNGGrids {
         if (geoRectangles.isEmpty()) {
             return null;
         }
+        ExecutorService exeService = Executors.newFixedThreadPool(8);
 
         // for each geographic rectangle in this viewport, generate and store 100K gridlines
         for (int i=0 ; i < geoRectangles.size() ; i++) {
             USNGGrids onegzd = new USNGGrids(geoRectangles.get(i), 100000, zoomLevel);
-            onegzd.computeOneCell(viewPort);
-            polylines100k.addAll(onegzd.gridlines);
+            exeService.execute(new ComputeCellRunnable(onegzd, polylines100k, viewPort));
+            //onegzd.computeOneCell(viewPort);
+            //polylines100k.addAll(onegzd.gridlines);
             //this.labels[i] = onegzd.labels;
         }
 
+        exeService.shutdown();
+        while (!exeService.isTerminated()) {
+        }
+
         return polylines100k;
+    }
+
+    private static class ComputeCellRunnable implements Runnable {
+
+        private USNGGrids onegzd;
+        private List<Polyline> polylines100k;
+        private USNGViewPort viewPort;
+
+        private ComputeCellRunnable (
+                USNGGrids onegzd,
+                List<Polyline> polylines100k,
+                USNGViewPort viewPort) {
+            this.onegzd = onegzd;
+            this.polylines100k = polylines100k;
+            this.viewPort = viewPort;
+        }
+
+        @Override
+        public void run() {
+            try {
+                onegzd.computeOneCell(viewPort);
+                polylines100k.addAll(onegzd.gridlines);
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "",e);
+            }
+        }
     }
 
     // instance of one utm cell
@@ -178,31 +216,41 @@ public class USNGGrids {
 
         // for each n-s line that covers the cell, with overedge
         for (i=sw_utm_e; i<ne_utm_e; i+=this.interval,j++) {
-            geocoords = new GeoPoint(0.0,0.0);
-            ArrayList<ProjCoordinate> temp = new ArrayList<>();   // holds extended lines
-            ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();  // holds lines clipped to GZD bounds
+            //geocoords = new GeoPoint(0.0,0.0);
+            //ArrayList<ProjCoordinate> temp = new ArrayList<>();   // holds extended lines
+            //ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();  // holds lines clipped to GZD bounds
+            // holds extended lines
+            ArrayList<GeoPoint> temp = new ArrayList<>();
+            // holds lines clipped to GZD bounds
+            ArrayList<GeoPoint> gr100kCoord = new ArrayList<>();
 
             // collect coords to be used to place markers
             // '2*this.interval' is a fudge factor that approximately offsets grid line convergence
             //USNGUtil.UTMtoLL(sw_utm_n+(2*this.interval),i,zone,geocoords);
 
-            if (geocoords.getLongitude() > wLng_temp && geocoords.getLongitude() < eLng_temp) {
-                eastings.add(k++, geocoords.getLongitude());
-            }
+            //if (geocoords.getLongitude() > wLng_temp && geocoords.getLongitude() < eLng_temp) {
+            //    eastings.add(k++, geocoords.getLongitude());
+            //}
 
             for (m=sw_utm_n,n=0; m<=ne_utm_n; m+=precision,n++) {
+                GeoPoint result = USNGUtil.UTMtoLLpro4jGeo(new ProjCoordinate(i, m, 0), cellZone, cellLetter);
+
+                temp.add(n, result);
                 //USNGUtil.UTMtoLL(m,i,zone,geocoords);
                 //temp.add(n, USNGUtil.toEPSG3857fromEPSG4326(new ProjCoordinate(geocoords.getLongitude(), geocoords.getLatitude())));
             }
 
             // clipping routine...clip n-s grid lines to GZD boundary
             for (p=0; p<temp.size()-1; p++) {
+                if (clipToGZD(temp,p)) {
+                    gr100kCoord.add(temp.get(p));
+                }
                 //if (this.clipToGZD(temp,p)) {
                  //   gr100kCoord.add(new GeoPoint(temp.get(p).y, temp.get(p).x));
                 //}
             }
 
-
+            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of n-s grid line segments
             //this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of n-s grid line segments
         }
         eastings.add(k, eLng_temp); //this.elng  // east boundary of viewport
