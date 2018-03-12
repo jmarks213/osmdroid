@@ -60,7 +60,7 @@ public class USNGGrids {
         gridlines = new ArrayList<>();
     }
 
-    public static List<Polyline> grid100k (USNGViewPort viewPort, int zoomLevel) throws Exception {
+    public static List<Polyline> grid100k (USNGViewPort viewPort, int zoomLevel, ExecutorService exeService) throws Exception {
         List<Polyline> polylines = new ArrayList<>();
         List<Polyline> polylines100k = new ArrayList<>();
 
@@ -73,23 +73,66 @@ public class USNGGrids {
             return null;
         }
 
-        // compute each cell on its own thread
-        ExecutorService exeService = Executors.newFixedThreadPool(12);
-
         // for each geographic rectangle in this viewport, generate and store 100K gridlines
         for (int i=0 ; i < geoRectangles.size() ; i++) {
             USNGGrids onegzd = new USNGGrids(geoRectangles.get(i), 100000, zoomLevel);
-            exeService.execute(new ComputeCellRunnable(onegzd, polylines100k, viewPort));
-            //onegzd.computeOneCell(viewPort);
-            //polylines100k.addAll(onegzd.gridlines);
+            //exeService.execute(new ComputeCellRunnable(onegzd, polylines100k, viewPort));
+            onegzd.computeOneCell(viewPort);
+            polylines100k.addAll(onegzd.gridlines);
             //this.labels[i] = onegzd.labels;
         }
 
-        exeService.shutdown();
-        while (!exeService.isTerminated()) {
+        return polylines100k;
+    }
+
+    public static List<Polyline> grid10k (USNGViewPort viewPort, int zoomLevel, ExecutorService exeService) throws Exception {
+        List<Polyline> polylines = new ArrayList<>();
+        List<Polyline> polylines10k = new ArrayList<>();
+
+        USNGZoneLines zoneLines = new USNGZoneLines(viewPort);
+        polylines = zoneLines.getPolylines();
+
+        List<USNGGeoRectangle> geoRectangles = viewPort.getGeoRectangles();
+
+        if (geoRectangles.isEmpty()) {
+            return null;
         }
 
-        return polylines100k;
+        // for each geographic rectangle in this viewport, generate and store 100K gridlines
+        for (int i=0 ; i < geoRectangles.size() ; i++) {
+            USNGGrids onegzd = new USNGGrids(geoRectangles.get(i), 10000, zoomLevel);
+            //exeService.execute(new ComputeCellRunnable(onegzd, polylines10k, viewPort));
+            onegzd.computeOneCell(viewPort);
+            polylines10k.addAll(onegzd.gridlines);
+            //this.labels[i] = onegzd.labels;
+        }
+
+        return polylines10k;
+    }
+
+    public static List<Polyline> grid1k (USNGViewPort viewPort, int zoomLevel, ExecutorService exeService) throws Exception {
+        List<Polyline> polylines = new ArrayList<>();
+        List<Polyline> polylines1k = new ArrayList<>();
+
+        USNGZoneLines zoneLines = new USNGZoneLines(viewPort);
+        polylines = zoneLines.getPolylines();
+
+        List<USNGGeoRectangle> geoRectangles = viewPort.getGeoRectangles();
+
+        if (geoRectangles.isEmpty()) {
+            return null;
+        }
+
+        // for each geographic rectangle in this viewport, generate and store 100K gridlines
+        for (int i=0 ; i < geoRectangles.size() ; i++) {
+            USNGGrids onegzd = new USNGGrids(geoRectangles.get(i), 1000, zoomLevel);
+            //exeService.execute(new ComputeCellRunnable(onegzd, polylines1k, viewPort));
+            onegzd.computeOneCell(viewPort);
+            polylines1k.addAll(onegzd.gridlines);
+            //this.labels[i] = onegzd.labels;
+        }
+
+        return polylines1k;
     }
 
     private static class ComputeCellRunnable implements Runnable {

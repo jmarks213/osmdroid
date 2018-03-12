@@ -11,6 +11,8 @@ import org.osmdroid.views.overlay.Polyline;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Jason on 11/13/2017.
@@ -31,6 +33,9 @@ public class USNGOverlay {
         List<Integer> latlines = viewPort.getLatCoords();
         List<Integer> lnglines = viewPort.getLngCoords();
         List<USNGGeoRectangle> gzd_rectangles = viewPort.getGeoRectangles();
+
+        // compute each cell on its own thread
+        //ExecutorService exeService = Executors.newFixedThreadPool(12);
 
         if (zoomLevel > 2) {
             // makes zone line width semi-dynamic; gets wider as you zoom in
@@ -71,7 +76,7 @@ public class USNGOverlay {
         if (zoomLevel > 5) {
             List<Polyline> grid100k = new ArrayList<>();
             try {
-                 grid100k = USNGGrids.grid100k(viewPort, zoomLevel);
+                 grid100k = USNGGrids.grid100k(viewPort, zoomLevel, null);
             } catch (Exception e) {
                 Log.e(LOG_TAG,"display 100k grid",e);
             }
@@ -91,6 +96,38 @@ public class USNGOverlay {
                 }
             }
             */
+        }
+
+        if (zoomLevel > 9) {
+            List<Polyline> grid10k = new ArrayList<>();
+            try {
+                grid10k = USNGGrids.grid10k(viewPort, zoomLevel, null);
+            } catch (Exception e) {
+                Log.e(LOG_TAG,"display 10k grid",e);
+            }
+            if (grid10k != null) {
+                for (Polyline p : grid10k) {
+                    if (p != null) {
+                        unsgGridLines.add(p);
+                    }
+                }
+            }
+        }
+
+        if (zoomLevel > 12) {
+            List<Polyline> grid1k = new ArrayList<>();
+            try {
+                grid1k = USNGGrids.grid1k(viewPort, zoomLevel, null);
+            } catch (Exception e) {
+                Log.e(LOG_TAG,"display 1k grid",e);
+            }
+            if (grid1k != null) {
+                for (Polyline p : grid1k) {
+                    if (p != null) {
+                        unsgGridLines.add(p);
+                    }
+                }
+            }
         }
 
         return unsgGridLines;
