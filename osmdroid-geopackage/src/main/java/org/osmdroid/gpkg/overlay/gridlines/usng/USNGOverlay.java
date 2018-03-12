@@ -77,7 +77,9 @@ public class USNGOverlay {
             }
             if (grid100k != null) {
                 for (Polyline p : grid100k) {
-                    unsgGridLines.add(p);
+                    if (p != null) {
+                        unsgGridLines.add(p);
+                    }
                 }
             }
             /*

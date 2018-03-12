@@ -72,7 +72,9 @@ public class USNGGrids {
         if (geoRectangles.isEmpty()) {
             return null;
         }
-        ExecutorService exeService = Executors.newFixedThreadPool(8);
+
+        // compute each cell on its own thread
+        ExecutorService exeService = Executors.newFixedThreadPool(12);
 
         // for each geographic rectangle in this viewport, generate and store 100K gridlines
         for (int i=0 ; i < geoRectangles.size() ; i++) {
@@ -109,6 +111,7 @@ public class USNGGrids {
         public void run() {
             try {
                 onegzd.computeOneCell(viewPort);
+                if (onegzd.gridlines != null && onegzd.gridlines.size() > 0)
                 polylines100k.addAll(onegzd.gridlines);
             } catch (Exception e) {
                 Log.e(LOG_TAG, "",e);
@@ -154,6 +157,9 @@ public class USNGGrids {
         ArrayList<Double> eastings = new ArrayList<>();    // used to calculate 100K label positions
 
         double precision;
+        // for performance reasons use the interval as the precision
+        precision = interval;
+        /*
         // set density of points on grid lines
         // case 1: zoomed out a long way; not very dense
         if (this.zoomLevel < 12 ) {
@@ -167,6 +173,7 @@ public class USNGGrids {
         else {
             precision = 1000;
         }
+        */
 
         // for 1,000-meter grid and finer, don't want to label zone lines
         if (this.interval > 1000) { northings.add(0, this.sLat); }
