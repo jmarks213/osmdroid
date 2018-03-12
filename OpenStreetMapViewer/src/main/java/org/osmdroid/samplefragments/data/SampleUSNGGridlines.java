@@ -7,6 +7,7 @@ import org.osmdroid.samplefragments.BaseSampleFragment;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.FolderOverlay;
 import org.osmdroid.gpkg.overlay.gridlines.usng.USNGOverlay;
+import org.osmdroid.views.overlay.ZoomButtonsOverlay;
 
 /**
  * An example on how to use the lat/lon gridline overlay.
@@ -29,6 +30,7 @@ public class SampleUSNGGridlines extends BaseSampleFragment implements MapListen
         mMapView.getController().setCenter(new GeoPoint(0d,0d));
         mMapView.getController().setZoom(5);
         mMapView.setTilesScaledToDpi(true);
+        mMapView.setBuiltInZoomControls(false);
         mMapView.setMapListener(this);
         mMapView.getController().setZoom(3);
         mMapView.setMapRepetitionEnabled(false);

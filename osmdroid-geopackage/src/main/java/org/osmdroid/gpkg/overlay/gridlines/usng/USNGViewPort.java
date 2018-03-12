@@ -1,5 +1,7 @@
 package org.osmdroid.gpkg.overlay.gridlines.usng;
 
+import com.j256.ormlite.stmt.query.In;
+
 import org.osmdroid.util.BoundingBox;
 
 import java.util.ArrayList;
@@ -49,8 +51,8 @@ public class USNGViewPort {
     public USNGViewPort(BoundingBox mapViewBounds) {
 
         // push the corners of the view out so that lines extend off screen
-        final int PUSH_BOUNDS_LAT = 0;
-        final int PUSH_BOUNTS_LON = 0;
+        final int PUSH_BOUNDS_LAT = 4;
+        final int PUSH_BOUNTS_LON = 2;
         // push the northwest corner further out so more lines are drawn
         wLng = mapViewBounds.getLonWest() - PUSH_BOUNTS_LON < -180 ? -180 : (int) mapViewBounds.getLonWest() - PUSH_BOUNTS_LON;
         nLat = mapViewBounds.getLatNorth() + PUSH_BOUNDS_LAT > 90 ? 90 : (int) mapViewBounds.getLatNorth() + PUSH_BOUNDS_LAT;
@@ -75,14 +77,27 @@ public class USNGViewPort {
 
         // first zone intersection inside the southwest corner of the map window
         // longitude coordinate is straight-forward...
-        x1 = (int)(Math.floor((wLng/6)+1)*6.0);
+
+        double tempX1 = Math.floor(wLng);
+        while (tempX1 % 6 != 0) {
+            tempX1++;
+        }
+        x1 = (int) tempX1;
+        //x1 = (int)(Math.floor((wLng/6)+1)*6.0);
 
         // but latitude coordinate has three cases
         if (sLat < -80) {  // far southern zone; limit of UTM definition
             y1 = -80;
         }
         else {
-            y1 = (int)(Math.floor((sLat/8)+1)*8.0);
+
+            double tempY1 = Math.floor(sLat);
+            while (tempY1 % 8 != 0) {
+                tempY1++;
+            }
+            y1 = (int) tempY1;
+
+            //y1 = (int)(Math.floor((sLat/8)+1)*8.0);
         }
 
         lngCoords = new ArrayList<>();

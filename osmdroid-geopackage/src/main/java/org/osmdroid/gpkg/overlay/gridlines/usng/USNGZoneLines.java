@@ -27,7 +27,7 @@ public class USNGZoneLines {
         List<GeoPoint> geoPoints;
         GeoPoint tempGeoPoint;
 
-        for (int i=1; i < latCoords.size()-1 ; i++) {
+        for (int i=0; i < latCoords.size() ; i++) {
             geoPoints = new ArrayList<>();
             for (int j=0; j < lngCoords.size() ; j++) {
                 tempGeoPoint = new GeoPoint((double) latCoords.get(i), (double) lngCoords.get(j));
@@ -37,10 +37,10 @@ public class USNGZoneLines {
             polylines.add(USNGUtil.createPolyline(geoPoints));
         }  // for each latitude line
 
-        for (int i=1; i < lngCoords.size()-1 ; i++) {
+        for (int i=0; i < lngCoords.size() ; i++) {
 
             // insert code for Norway and Svalbard special cases here
-
+            //TODO insert norway svalbard special case
             // normal case, not in Norway or Svalbard
 ////       else {
             geoPoints = new ArrayList<>();
