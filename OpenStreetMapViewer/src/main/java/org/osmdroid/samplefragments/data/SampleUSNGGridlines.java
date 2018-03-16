@@ -59,7 +59,7 @@ public class SampleUSNGGridlines extends BaseSampleFragment implements MapListen
             activeLatLonGrid.onDetach(mMapView);
         }
 
-        activeLatLonGrid = USNGOverlay.getUSNGGrid(getContext(), mMapView);
+        activeLatLonGrid = USNGOverlay.getUSNGGrid(mMapView);
         mMapView.getOverlays().add(activeLatLonGrid);
 
     }

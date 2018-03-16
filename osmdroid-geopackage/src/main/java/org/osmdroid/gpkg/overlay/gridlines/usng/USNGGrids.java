@@ -1,5 +1,6 @@
 package org.osmdroid.gpkg.overlay.gridlines.usng;
 
+import android.graphics.Color;
 import android.util.Log;
 
 import org.osgeo.proj4j.ProjCoordinate;
@@ -16,6 +17,7 @@ import java.util.concurrent.Executors;
  */
 
 public class USNGGrids {
+
     private static final String LOG_TAG = USNGGrids.class.getSimpleName();
 
     private double nLat;
@@ -58,6 +60,31 @@ public class USNGGrids {
         this.zoomLevel = zoomLevel;
 
         gridlines = new ArrayList<>();
+    }
+
+    public static List<Polyline> generateGrid (USNGViewPort viewPort, int zoomLevel, int interval) throws Exception {
+        List<Polyline> polylines = new ArrayList<>();
+        List<Polyline> gridPolylines = new ArrayList<>();
+
+        USNGZoneLines zoneLines = new USNGZoneLines(viewPort);
+        polylines = zoneLines.getPolylines();
+
+        List<USNGGeoRectangle> geoRectangles = viewPort.getGeoRectangles();
+
+        if (geoRectangles.isEmpty()) {
+            return null;
+        }
+
+        // for each geographic rectangle in this viewport, generate and store 100K gridlines
+        for (int i=0 ; i < geoRectangles.size() ; i++) {
+            USNGGrids onegzd = new USNGGrids(geoRectangles.get(i), interval, zoomLevel);
+            //exeService.execute(new ComputeCellRunnable(onegzd, polylines100k, viewPort));
+            onegzd.computeOneCell(viewPort);
+            gridPolylines.addAll(onegzd.gridlines);
+            //this.labels[i] = onegzd.labels;
+        }
+
+        return gridPolylines;
     }
 
     public static List<Polyline> grid100k (USNGViewPort viewPort, int zoomLevel, ExecutorService exeService) throws Exception {
@@ -255,7 +282,7 @@ public class USNGGrids {
                 }
             }
 
-            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of e-w grid line segments
+            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord, (int) interval));  // array of e-w grid line segments
         }
 
         northings.add(k++, this.nLat);
@@ -300,7 +327,7 @@ public class USNGGrids {
                 //}
             }
 
-            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of n-s grid line segments
+            this.gridlines.add(USNGUtil.createPolyline(gr100kCoord, (int) interval));  // array of n-s grid line segments
             //this.gridlines.add(USNGUtil.createPolyline(gr100kCoord));  // array of n-s grid line segments
         }
         eastings.add(k, eLng_temp); //this.elng  // east boundary of viewport

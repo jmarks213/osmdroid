@@ -314,11 +314,42 @@ public class USNGUtil {
      * @param geoPoints a list of osmdroid GeoPoints
      * @return the built Polyline object
      */
-    public static Polyline createPolyline(List<GeoPoint> geoPoints) {
+    public static Polyline createPolyline(List<GeoPoint> geoPoints, int interval) {
         Polyline polyline = new Polyline();
-        polyline.setWidth(2.0f);
-        polyline.setColor(Color.BLACK);
         polyline.setPoints(geoPoints);
+
+        switch (interval) {
+            case USNGGridStyle.GZD_GRID_INTERVAL:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_GZD_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_GZD_COLOR);
+                break;
+            case 100000:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_100k_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_100k_COLOR);
+                break;
+            case 10000:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_10k_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_10k_COLOR);
+                break;
+            case 1000:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_1k_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_1k_COLOR);
+                break;
+            case 100:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_100m_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_100m_COLOR);
+                break;
+            case 10:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_10m_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_10m_COLOR);
+                break;
+            case 1:
+                polyline.setWidth(USNGGridStyle.GRID_LINE_1m_WIDTH);
+                polyline.setColor(USNGGridStyle.GRID_LINE_1m_COLOR);
+                break;
+
+        }
+
         return polyline;
     }
 

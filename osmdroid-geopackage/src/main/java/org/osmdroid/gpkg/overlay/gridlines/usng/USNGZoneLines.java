@@ -34,7 +34,7 @@ public class USNGZoneLines {
                 geoPoints.add(tempGeoPoint);
             }
 
-            polylines.add(USNGUtil.createPolyline(geoPoints));
+            polylines.add(USNGUtil.createPolyline(geoPoints, USNGGridStyle.GZD_GRID_INTERVAL));
         }  // for each latitude line
 
         for (int i=0; i < lngCoords.size() ; i++) {
@@ -49,7 +49,7 @@ public class USNGZoneLines {
                 geoPoints.add(tempGeoPoint);
             }
 
-            polylines.add(USNGUtil.createPolyline(geoPoints));
+            polylines.add(USNGUtil.createPolyline(geoPoints, USNGGridStyle.GZD_GRID_INTERVAL));
 ////      }  // normal case else
         }  // for each longitude line
     }
