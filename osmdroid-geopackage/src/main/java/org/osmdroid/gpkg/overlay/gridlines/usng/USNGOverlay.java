@@ -38,6 +38,8 @@ public class USNGOverlay {
         // compute each cell on its own thread
         //ExecutorService exeService = Executors.newFixedThreadPool(12);
 
+
+
         if (zoomLevel > 12) {
             List<Polyline> grid1k = new ArrayList<>();
             try {
